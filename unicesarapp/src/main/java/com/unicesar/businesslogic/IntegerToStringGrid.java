@@ -35,11 +35,8 @@ public class IntegerToStringGrid implements Converter<String, Integer> {
     public String convertToPresentation(Integer value, Class<? extends String> targetType, Locale locale) throws ConversionException {
         if (value == null)
             return null;
-        if (vServidor == null) {
+        else
             return SeveralProcesses.retornarInformacion(vTabla, vCodigo, vNombre, value);
-        } else {
-            return SeveralProcesses.retornarInformacion(vTabla, vCodigo, vNombre, value, vServidor);
-        }
     }
 
     @Override

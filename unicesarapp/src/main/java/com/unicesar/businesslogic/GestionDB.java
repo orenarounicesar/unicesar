@@ -30,7 +30,7 @@ public class GestionDB {
     private ArrayList<String> listaSentencias;
     
     public GestionDB() throws NamingException, SQLException {
-        vJndi = "slplusdbjndi";
+        vJndi = "unicesarappjndi";
         llaveTabla = null;
         nombreTabla = null;
         this.verificarCierreConexion = Settings.VERIFICARCIERRECONEXION;
@@ -38,52 +38,15 @@ public class GestionDB {
         this.conectar();
     }
     
-    public GestionDB(String servidor) throws NamingException, SQLException {        
-        setJNDI(servidor);
-        this.verificarCierreConexion = Settings.VERIFICARCIERRECONEXION;
-        this.conectar();
-    }
-    
-    private static void setJNDI(String servidor) {
-        switch (servidor) {
-            case "Valledupar":
-                vJndi = "sojndi";
-                break;
-            case "La Jagua":
-                vJndi = "jaguajndi";
-                break;
-            case "Brigadas Rojo":
-                vJndi = "rojojndi";
-                break;
-            case "Brigadas Gris":
-                vJndi = "grisjndi";
-                break;
-            case "SYSPLUS":
-                vJndi = "sysplusjndi";
-                break;
-            case "SYSPLUSGENERAL":
-                vJndi = "sysplusgeneraljndi";
-                break;
-            default:
-                break;
-        }
-    }
-
     public Connection getConexion() {
         return conexion;
     }        
     
     public static JDBCConnectionPool getConnectionPool(){
-        connectionPool = new J2EEConnectionPool("slplusdbjndi");
-        return connectionPool;
-    }
-    
-    public static JDBCConnectionPool getConnectionPool(String servidor){        
-        setJNDI(servidor);
         connectionPool = new J2EEConnectionPool(vJndi);
         return connectionPool;
     }
-  
+    
     public void conectar() throws NamingException, SQLException {
         this.conexion = InitialContext.<DataSource>doLookup(vJndi).getConnection();
         this.instancia = (Statement) this.conexion.createStatement(
@@ -144,13 +107,13 @@ public class GestionDB {
             nombreTabla = "'" + nombreTabla + "'";
         if ( returnKey == false ) {
             instancia.execute(cadenaSql);
-            if ("slplusdbjndi".equals(vJndi)) {
-                instancia.execute("INSERT INTO bitacora (login, cadenasql, fecha, llave, tipo, nombre_tabla) VALUES (\"" 
-                + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER).toString() + "\", \"" + cadenaSql + "\", now(), "
-                        + llaveTabla + ", '"
-                        + cadenaSql.substring(0, 6) + "', "
-                        + nombreTabla + ")");
-            }
+//            if ("slplusdbjndi".equals(vJndi)) {
+//                instancia.execute("INSERT INTO bitacora (login, cadenasql, fecha, llave, tipo, nombre_tabla) VALUES (\"" 
+//                + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER).toString() + "\", \"" + cadenaSql + "\", now(), "
+//                        + llaveTabla + ", '"
+//                        + cadenaSql.substring(0, 6) + "', "
+//                        + nombreTabla + ")");
+//            }
             nombreTabla = null;
             llaveTabla = null;
             return "true";
@@ -159,13 +122,13 @@ public class GestionDB {
             ResultSet rs = instancia.getGeneratedKeys();
             rs.next();
             String llaveGenerada = rs.getString(1);
-            if ("slplusdbjndi".equals(vJndi)) {
-                instancia.execute("INSERT INTO bitacora (login, cadenasql, fecha, llave, tipo, nombre_tabla) VALUES (\""
-                    + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER).toString() + "\", \"" + cadenaSql + "\", now(), "
-                    + llaveGenerada + ", '"
-                    + cadenaSql.substring(0, 6) + "', "
-                    + nombreTabla + ")");
-            }
+//            if ("slplusdbjndi".equals(vJndi)) {
+//                instancia.execute("INSERT INTO bitacora (login, cadenasql, fecha, llave, tipo, nombre_tabla) VALUES (\""
+//                    + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER).toString() + "\", \"" + cadenaSql + "\", now(), "
+//                    + llaveGenerada + ", '"
+//                    + cadenaSql.substring(0, 6) + "', "
+//                    + nombreTabla + ")");
+//            }
             nombreTabla = null;
             llaveTabla = null;
             return "true" + llaveGenerada;

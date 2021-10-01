@@ -97,7 +97,7 @@ public class GestionDBManejoExcepcion {
             this.conexion.close();
         } catch (SQLException | NullPointerException ex) {
             Logger.getLogger(GestionDB.class.getName()).log(Level.SEVERE, "Cerrando Conexión - Usuario: " 
-                    + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER), ex);
+                    + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN), ex);
             Notification.show(ex.getMessage() + "\nImposible cerrar conexion ... FAIL", Notification.Type.TRAY_NOTIFICATION);
         }
     }
@@ -141,7 +141,7 @@ public class GestionDBManejoExcepcion {
                 instancia.execute(cadenaSql);
                 if ("slplusdbjndi".equals(vJndi)) {
                     instancia.execute("INSERT INTO bitacora (login, cadenasql, fecha, llave, tipo, nombre_tabla) VALUES (\"" 
-                    + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER).toString() + "\", \"" + cadenaSql + "\", now(), "
+                    + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN).toString() + "\", \"" + cadenaSql + "\", now(), "
                             + llaveTabla + ", '"
                             + cadenaSql.substring(0, 6) + "', "
                             + nombreTabla + ")");
@@ -156,7 +156,7 @@ public class GestionDBManejoExcepcion {
                 String llaveGenerada = rs.getString(1);
                 if ("slplusdbjndi".equals(vJndi)) {
                     instancia.execute("INSERT INTO bitacora (login, cadenasql, fecha, llave, tipo, nombre_tabla) VALUES (\""
-                        + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER).toString() + "\", \"" + cadenaSql + "\", now(), "
+                        + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN).toString() + "\", \"" + cadenaSql + "\", now(), "
                         + llaveGenerada + ", '"
                         + cadenaSql.substring(0, 6) + "', "
                         + nombreTabla + ")");

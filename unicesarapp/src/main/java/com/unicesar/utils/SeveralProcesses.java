@@ -7,24 +7,26 @@ import com.unicesar.businesslogic.GestionDBException;
 import com.unicesar.businesslogic.Notifications;
 import com.unicesar.components.ComboBoxCustom;
 import com.unicesar.components.ComponentClass;
+import com.unicesar.components.LabelClick;
 import com.unicesar.components.NumberFieldCustom;
 import com.unicesar.components.TableWithFilter;
 import com.unicesar.components.TextAreaCustom;
 import com.unicesar.components.TextFieldCustom;
+import com.unicesar.components.TextFieldMask;
+import com.unicesar.components.TwinColSelectCustom;
 import com.vaadin.data.Item;
 import com.vaadin.server.StreamResource;
-import com.vaadin.server.ThemeResource;
 import com.vaadin.server.WebBrowser;
-import com.vaadin.shared.ui.BorderStyle;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.CheckBox;
 import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.ComponentContainer;
 import com.vaadin.ui.Grid;
-import com.vaadin.ui.Link;
 import com.vaadin.ui.Notification;
+import com.vaadin.ui.OptionGroup;
 import com.vaadin.ui.Panel;
+import com.vaadin.ui.PasswordField;
 import com.vaadin.ui.PopupDateField;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.TextArea;
@@ -32,7 +34,6 @@ import com.vaadin.ui.TextField;
 import com.vaadin.ui.TwinColSelect;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.themes.ValoTheme;
-import de.steinwedel.messagebox.MessageBox;
 import eu.maxschuster.vaadin.autocompletetextfield.AutocompleteSuggestionProvider;
 import eu.maxschuster.vaadin.autocompletetextfield.AutocompleteTextField;
 import eu.maxschuster.vaadin.autocompletetextfield.provider.CollectionSuggestionProvider;
@@ -70,53 +71,6 @@ public class SeveralProcesses {
         return false;
     }
     
-    public static Boolean isComponentRequired(ComponentContainer componentContainer) {
-        
-        ArrayList<ComponentContainer> listComponentContainer = new ArrayList<>();
-        listComponentContainer.add(componentContainer);
-        Boolean retorno = true;
-        
-        while(!listComponentContainer.isEmpty() && retorno){
-            Iterator<Component> componentIterator = listComponentContainer.get(0).iterator();
-
-            while(componentIterator.hasNext() && retorno){
-                Component next = componentIterator.next();
-                
-                if(validateComponent(next)){
-
-                    if(next.getClass() == TextField.class){
-                        TextField textField = (TextField) next;
-                        if (!textField.isValid()){
-                            textField.setRequiredError("El valor de " + textField.getCaption().trim() + 
-                                    " no puede ser vacio o nulo");
-                            textField.setImmediate(true);
-                            textField.focus();
-                            retorno = false;
-                        }
-                    }
-                    if(next.getClass() == ComboBox.class){
-                        ComboBox comboBox = (ComboBox) next;
-                        if(!comboBox.isValid()){
-                            comboBox.setRequiredError("El valor de " + comboBox.getCaption().trim() + 
-                                    " no puede ser vacio o nulo");
-                            comboBox.setImmediate(true);
-                            comboBox.focus();
-                            retorno = false;
-                        }
-                    }
-                } else {  
-                    if (next.getClass() != Panel.class)
-                        listComponentContainer.add((ComponentContainer) next);
-                }
-            }
-            
-            listComponentContainer.remove(0);
-        }
-        if (!retorno)
-            Notifications.getError("Falta información requerida");
-        return retorno;
-    }
-    
     public static String retornarInformacion(String vTabla, String vCodigo, String vNombre, Integer value) {
         String retorno = "";
         GestionDB objConnect = null;
@@ -140,98 +94,7 @@ public class SeveralProcesses {
         return retorno;
     }
     
-    public static String retornarInformacion(String vTabla, String vCodigo, String vNombre, Integer value, String servidor) {
-        String retorno = "";
-        GestionDB objConnect = null;
-        String cadenaSql = "SELECT " + vNombre + " AS nombre FROM " + vTabla + " WHERE " + vCodigo + " = " + value;
-        try {
-            objConnect = new GestionDB(servidor);
-            ResultSet rs = objConnect.consultar(cadenaSql);
-            rs.next();
-            retorno = rs.getString("nombre");
-        } catch (NamingException | SQLException ex) {
-            Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, cadenaSql  + " - " + getSessionUser(), ex);
-            Notification.show(ex.getMessage(), Notification.Type.ERROR_MESSAGE);            
-        } finally {
-            try {
-                if (objConnect != null)
-                    objConnect.desconectar();
-            } catch (SQLException ex) {
-                Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, "Cerrando Conexión - " + getSessionUser(), ex);
-            }
-        }
-        return retorno;
-    }
-
-    public static void loadDataTblsPeligros(Table tblRiesgos, Boolean esHigienico) {
-        String cadenaSql;
-        tblRiesgos.removeAllItems();
-        GestionDB objConnect = null;
-        if (esHigienico)
-            cadenaSql = "SELECT hr.codigo_riesgo, "
-                + "hrg.nombre_riesgo_grupo, "
-                + "hr.nombre_riesgo, "
-                + "hr.unidad_medida_riesgo "
-                + "FROM ho_riesgos hr "
-                + "INNER JOIN ho_riesgos_grupos hrg ON hrg.codigo_riesgo_grupo = hr.codigo_riesgo_grupo "
-                + "WHERE hr.es_higienico = 1 AND hr.activo = 1";
-        else
-            cadenaSql = "SELECT hr.codigo_riesgo, "
-                + "hrg.nombre_riesgo_grupo, "
-                + "hr.nombre_riesgo "
-                + "FROM ho_riesgos hr "
-                + "INNER JOIN ho_riesgos_grupos hrg ON hrg.codigo_riesgo_grupo = hr.codigo_riesgo_grupo "
-                + "WHERE hr.es_higienico = 0 AND hr.activo = 1";
-        try {
-            objConnect = new GestionDB();
-            ResultSet rs = objConnect.consultar(cadenaSql);
-            while(rs.next()){
-                if (esHigienico)
-                    tblRiesgos.addItem(new Object[]{rs.getInt("codigo_riesgo"), rs.getString("nombre_riesgo_grupo"), 
-                        rs.getString("nombre_riesgo"), null, new Date(), 0, "", rs.getString("unidad_medida_riesgo")}, 
-                        rs.getInt("codigo_riesgo"));
-                else
-                    tblRiesgos.addItem(new Object[]{rs.getInt("codigo_riesgo"), rs.getString("nombre_riesgo_grupo"), 
-                        rs.getString("nombre_riesgo"), null}, 
-                        rs.getInt("codigo_riesgo"));
-            }
-        } catch (NamingException | SQLException ex) {
-            Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, cadenaSql  + " - " + getSessionUser(), ex);
-            Notification.show(ex.getMessage(), Notification.Type.ERROR_MESSAGE);            
-        } finally {
-            try {
-                if (objConnect != null)
-                    objConnect.desconectar();
-            } catch (SQLException ex) {
-                Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, "Cerrando Conexión - " + getSessionUser(), ex);
-            }
-        }
-    }
-
-    private static StreamResource createResource(Integer codFile, String fileName) {
-        StreamResource streamResource = null;
-        GestionDB objConnect = null;
-        try {
-            objConnect = new GestionDB();
-            ResultSet rs = objConnect.consultar("SELECT file FROM empresas_clientes_files WHERE  codigo_file = " + codFile);        
-            rs.next();
-            byte[] bytes = rs.getBytes("file");
-            streamResource = new StreamResource(() -> new ByteArrayInputStream(bytes), fileName);
-        } catch (NamingException | SQLException ex) {   
-            Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, getSessionUser(), ex);
-            Notifications.getError(ex.getMessage());
-        } finally {
-            try {
-                if (objConnect != null)
-                    objConnect.desconectar();
-            } catch (SQLException ex) {
-                Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, "Cerrando Conexión - " + getSessionUser(), ex);
-            }
-        }
-        return streamResource;
-    }
-    
-    public static void ConfirmarSentencia (String mensaje)throws GestionDBException{
+    public static void confirmarSentencia (String mensaje)throws GestionDBException{
         if (!mensaje.substring(0, 4).equals("true")) {
             throw new GestionDBException(mensaje);            
         }
@@ -360,21 +223,19 @@ public class SeveralProcesses {
                         getTableItemSelected(tabla, keyCodigo, keySi, keyComentario, itemsSelected);
                     }                        
                 } else {
-//                    if (!next.getClass().getSuperclass().equals(ToolsBarr.class)) {
-                        if (next.getClass().equals(Panel.class)) {
-                            Component content = ((Panel) next).getContent();
-                            if (validateComponent(content)) {
-                                if (content.getClass().equals(Table.class)) {
-                                    Table tabla = (Table) content;
-                                    getTableItemSelected(tabla, keyCodigo, keySi, keyComentario, itemsSelected);
-                                }
-                            } else {
-                                listComponentContainer.add((ComponentContainer) content);
+                    if (next.getClass().equals(Panel.class)) {
+                        Component content = ((Panel) next).getContent();
+                        if (validateComponent(content)) {
+                            if (content.getClass().equals(Table.class)) {
+                                Table tabla = (Table) content;
+                                getTableItemSelected(tabla, keyCodigo, keySi, keyComentario, itemsSelected);
                             }
                         } else {
-                            listComponentContainer.add((ComponentContainer) next);
+                            listComponentContainer.add((ComponentContainer) content);
                         }
-//                    }
+                    } else {
+                        listComponentContainer.add((ComponentContainer) next);
+                    }
                 }
             }            
             listComponentContainer.remove(0);
@@ -547,7 +408,7 @@ public class SeveralProcesses {
     
     public static String getPrivilegio() {
         String retorno = null;
-        String cadenaSql = "SELECT privilegio FROM app_users WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) +"'";
+        String cadenaSql = "SELECT privilegio FROM app_users WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) +"'";
         GestionDB objConnect = null;
         try {
             objConnect = new GestionDB();
@@ -900,7 +761,7 @@ public class SeveralProcesses {
         String cadenaSql = "SELECT mau.insertar "
                 + "FROM menu_app_users mau " 
                 + "INNER JOIN menu m ON m.name_menu = mau.name_menu " 
-                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) + "' AND " + 
+                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) + "' AND " + 
                 "mau.name_menu = '" + name_menu + "'";
         GestionDB objConnect = null;
         try {
@@ -927,7 +788,7 @@ public class SeveralProcesses {
         String cadenaSql = "SELECT mau.actualizar "
                 + "FROM menu_app_users mau " 
                 + "INNER JOIN menu m ON m.name_menu = mau.name_menu " 
-                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) + "' AND " + 
+                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) + "' AND " + 
                 "mau.name_menu = '" + name_menu + "'";
         GestionDB objConnect = null;
         try {
@@ -954,7 +815,7 @@ public class SeveralProcesses {
         String cadenaSql = "SELECT mau.eliminar "
                 + "FROM menu_app_users mau " 
                 + "INNER JOIN menu m ON m.name_menu = mau.name_menu " 
-                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) + "' AND " + 
+                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) + "' AND " + 
                 "mau.name_menu = '" + name_menu + "'";
         GestionDB objConnect = null;
         try {
@@ -981,7 +842,7 @@ public class SeveralProcesses {
         String cadenaSql = "SELECT mau.lider "
                 + "FROM menu_app_users mau " 
                 + "INNER JOIN menu m ON m.name_menu = mau.name_menu " 
-                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) + "' AND " + 
+                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) + "' AND " + 
                 "mau.name_menu = '" + name_menu + "'";
         GestionDB objConnect = null;
         try {
@@ -1008,7 +869,7 @@ public class SeveralProcesses {
         String cadenaSql = "SELECT mau.facturacion "
                 + "FROM menu_app_users mau " 
                 + "INNER JOIN menu m ON m.name_menu = mau.name_menu " 
-                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) + "' AND " + 
+                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) + "' AND " + 
                 "mau.name_menu = '" + name_menu + "'";
         GestionDB objConnect = null;
         try {
@@ -1035,7 +896,7 @@ public class SeveralProcesses {
         String cadenaSql = "SELECT mau.valor_pantalla "
                 + "FROM menu_app_users mau " 
                 + "INNER JOIN menu m ON m.name_menu = mau.name_menu " 
-                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) + "' AND " + 
+                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) + "' AND " + 
                 "mau.name_menu = '" + name_menu + "'";
         GestionDB objConnect = null;
         try {
@@ -1062,7 +923,7 @@ public class SeveralProcesses {
         String cadenaSql = "SELECT mau.valor_reporte "
                 + "FROM menu_app_users mau " 
                 + "INNER JOIN menu m ON m.name_menu = mau.name_menu " 
-                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER) + "' AND " + 
+                + "WHERE login = '" + UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN) + "' AND " + 
                 "mau.name_menu = '" + name_menu + "'";
         GestionDB objConnect = null;
         try {
@@ -1216,29 +1077,6 @@ public class SeveralProcesses {
         return null;
     }
     
-    public static StreamResource createResourceSoporteSigso(String codigoArchivo) {
-        StreamResource streamResource = null;
-        GestionDB objConnect = null;
-        try {
-            objConnect = new GestionDB("Valledupar");
-            ResultSet rs = objConnect.consultar("SELECT archivo, nombre FROM stock_files.archivos WHERE id = " + codigoArchivo);
-            if (rs.next()) {
-                byte[] bytes = rs.getBytes("archivo");
-                streamResource = new StreamResource(() -> new ByteArrayInputStream(bytes), rs.getString("nombre"));
-            }
-        } catch (NamingException | SQLException ex) {   
-            Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, getSessionUser(), ex);
-        } finally {
-            try {
-                if (objConnect != null)
-                    objConnect.desconectar();
-            } catch (SQLException ex) {
-                Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, "Cerrando Conexión - " + getSessionUser(), ex);
-            }
-        }
-        return streamResource;
-    }
-    
     public static Timestamp getFechaActualServidor() {
         Timestamp retorno = null;
         GestionDB objConnect = null;
@@ -1308,11 +1146,11 @@ public class SeveralProcesses {
     }
     
     public static String getSessionUser() {
-        return UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER).toString();
+        return UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN).toString();
     }
     
     public static Object getObjectSessionUser() {
-        return UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER);
+        return UI.getCurrent().getSession().getAttribute(VariablesSesion.LOGIN);
     }
     
     public static boolean validarMail(String mail) {
@@ -1736,7 +1574,7 @@ public class SeveralProcesses {
     
     public static String getLoginEmpresaCliente(Object valor) {
         String retorno = null;
-        if (UI.getCurrent().getSession().getAttribute(VariablesSesion.CURRENT_USER_TYPE).equals("CLIENTE") && valor == null) {
+        if (UI.getCurrent().getSession().getAttribute(VariablesSesion.CODIGO_DOCENTE).equals("CLIENTE") && valor == null) {
             retorno = "'" + SeveralProcesses.getSessionUser() + "'";
         } else if (valor != null) {
             String cadenaSql = "SELECT "
@@ -2026,36 +1864,6 @@ public class SeveralProcesses {
         }
     }
     
-    public static void addItemsComboNotDefault(ComboBox combo, String cadenaSql, String servidor) {
-        if (!cadenaSql.isEmpty()) {
-            combo.removeAllItems();
-            GestionDB objConnect = null;
-            try {
-                objConnect = new GestionDB(servidor);
-                ResultSet rsCbb = objConnect.consultar(cadenaSql);
-                if (rsCbb.next()) {
-                    combo.addItem(rsCbb.getInt(1));
-                    combo.setItemCaption(rsCbb.getInt(1), rsCbb.getString(2));
-                    while(rsCbb.next()){
-                        combo.addItem(rsCbb.getInt(1));
-                        combo.setItemCaption(rsCbb.getInt(1), rsCbb.getString(2));
-                    }
-                }
-            } catch (SQLException | NullPointerException | NamingException ex) {
-                Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
-                Notifications.getError(ex.getMessage());
-            } finally {
-                try {
-                    if (objConnect != null)
-                        objConnect.desconectar();
-                } catch (SQLException ex) {
-                    Logger.getLogger(SeveralProcesses.class.getName()).log(Level.SEVERE, "Cerrando Conexión - " + SeveralProcesses.getSessionUser(), ex);
-                    Notifications.getError(ex.getMessage());
-                }
-            }
-        }
-    }
-    
     public static void addItemsTwinColSelect(TwinColSelect twinColSelect, String cadenaSql) {
         twinColSelect.removeAllItems();
         GestionDB objConnect = null;
@@ -2080,4 +1888,142 @@ public class SeveralProcesses {
         }
     }
     
+    public static Boolean isComponentRequired(ComponentContainer componentContainer) {
+        
+        ArrayList<ComponentContainer> listComponentContainer = new ArrayList<>();
+        listComponentContainer.add(componentContainer);
+        Boolean retorno = true;
+//        int i = 0;
+        while(!listComponentContainer.isEmpty() && retorno){
+//        while(i < listComponentContainer.size() && retorno){
+            Iterator<Component> componentIterator = listComponentContainer.get(0).iterator();
+
+            while(componentIterator.hasNext() && retorno){
+                Component next = componentIterator.next();
+                
+                if(validateComponent(next)){                    
+                    retorno = valueComponentValidate(next, retorno);
+                } else {
+                    if (next.getClass().equals(Panel.class) || next.getClass().equals(TwinColSelectCustom.class)) {
+                        Component content = ((Panel) next).getContent();
+                        if(validateComponent(content)) {
+                            retorno = valueComponentValidate(content, retorno);
+                        } else {
+                            listComponentContainer.add((ComponentContainer) content);
+                        }
+                    } else {
+                        listComponentContainer.add((ComponentContainer) next);
+                    }
+                }
+            }
+//            i++;
+            listComponentContainer.remove(0);
+        }
+        if (!retorno)
+            Notifications.getError("FALTA INFORMACIÓN REQUERIDA");
+        return retorno;
+    }
+    
+    public static Boolean valueComponentValidate(Component next, Boolean retorno) {
+                    
+        if ( next.getClass().equals(TextField.class) || next.getClass().equals(TextFieldCustom.class) 
+                || next.getClass().equals(NumberField.class) || next.getClass().equals(NumberFieldCustom.class)
+                || next.getClass().equals(AutocompleteTextField.class) || next.getClass().equals(TextFieldMask.class) ) {
+            TextField textField = (TextField) next;
+            if (!textField.isValid()){
+                textField.setRequiredError("El valor de " + textField.getCaption().trim() + 
+                        " no puede ser vacio o nulo");
+                textField.setImmediate(true);
+                textField.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass() == ComboBox.class || next.getClass() == ComboBoxCustom.class) {
+            ComboBox comboBox = (ComboBox) next;
+            if(!comboBox.isValid()) {
+                if (comboBox.getCaption() != null)
+                    comboBox.setRequiredError("El valor de " + comboBox.getCaption().trim() + " no puede ser vacio o nulo");
+                else
+                    comboBox.setRequiredError("El valor no puede ser vacio o nulo");
+                comboBox.setImmediate(true);
+                comboBox.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass().equals( PasswordField.class)) {
+            PasswordField passwordField = (PasswordField) next;
+            if(!passwordField.isValid()){
+                passwordField.setRequiredError("El valor de " + passwordField.getCaption().trim() + 
+                        " no puede ser vacio o nulo");
+                passwordField.setImmediate(true);
+                passwordField.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass().equals(TextArea.class) || next.getClass().equals(TextAreaCustom.class)) {
+            TextArea textArea = (TextArea) next;
+            if(!textArea.isValid()){
+                textArea.setRequiredError("El valor de " + textArea.getCaption().trim() + 
+                        " no puede ser vacio o nulo");
+                textArea.setImmediate(true);
+                textArea.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass().equals(CheckBox.class)) {
+            CheckBox checkBox = (CheckBox) next;
+            if(!checkBox.isValid()){
+                checkBox.setRequiredError("El valor de " + checkBox.getCaption().trim() + 
+                        " no puede ser vacio o nulo");
+                checkBox.setImmediate(true);
+                checkBox.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass().equals(TwinColSelect.class)) {
+            TwinColSelect twinColSelect = (TwinColSelect) next;
+            if(!twinColSelect.isValid()){
+                twinColSelect.setRequiredError("El valor de " + twinColSelect.getCaption() + 
+                        " no puede ser vacio o nulo");
+                twinColSelect.setImmediate(true);
+                twinColSelect.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass().equals(OptionGroup.class)) {
+            OptionGroup optionGroup = (OptionGroup) next;
+            if(!optionGroup.isValid()){
+                if (optionGroup.getCaption() == null)
+                    optionGroup.setRequiredError("El valor de Componente no puede ser vacio o nulo");
+                else
+                    optionGroup.setRequiredError("El valor de " + optionGroup.getCaption().trim() + " no puede ser vacio o nulo");
+                optionGroup.setImmediate(true);
+                optionGroup.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass().equals(PopupDateField.class)) {
+            PopupDateField popupDateField = (PopupDateField) next;
+            if(!popupDateField.isValid()){
+                popupDateField.setRequiredError("El valor de " + popupDateField.getCaption().trim() + 
+                        " no puede ser vacio o nulo");
+                popupDateField.setImmediate(true);
+                popupDateField.focus();
+                retorno = false;
+            }
+        }
+        
+        if(next.getClass().equals(LabelClick.class)) {
+            retorno =  true;
+        }
+        
+        return retorno;
+    }
 }

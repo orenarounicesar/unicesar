@@ -5,8 +5,11 @@
  */
 package com.unicesar.views;
 
+import com.unicesar.businesslogic.GestionDB;
 import com.unicesar.components.NumberFieldCustom;
 import com.unicesar.components.TableWithFilterSplit;
+import com.unicesar.utils.SeveralProcesses;
+import com.unicesar.utils.VariablesSesion;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
 import com.vaadin.server.FontAwesome;
@@ -20,7 +23,13 @@ import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.Table;
+import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalSplitPanel;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.naming.NamingException;
 
 /**
  *
@@ -39,6 +48,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
     private Panel panelTblEstudiantes;
     private HorizontalLayout layoutTablas;
     
+    private String cadenaSql;
     
     @Override
     public void enter(ViewChangeListener.ViewChangeEvent event) {
@@ -46,7 +56,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         lblTitulo.setWidthUndefined();
         lblTitulo.setStyleName("titulo");
         lblTitulo.addStyleName("textoEnormeRojo");
-        lblNombreDocente = new Label("Docente: <strong>Boris Gonzalez</strong>", ContentMode.HTML);
+        lblNombreDocente = new Label("Docente: <strong>" + getNombreDocente() + "</strong>", ContentMode.HTML);
         lblNombreDocente.setWidthUndefined();
         lblFechaLimite = new Label("Fecha Limite: <strong>01/10/2021</strong>", ContentMode.HTML);
         lblFechaLimite.setWidthUndefined();
@@ -62,6 +72,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         layoutCabecera.setMargin(new MarginInfo(false, true, false, true));
         layoutCabecera.setSpacing(true);
         layoutCabecera.setComponentAlignment(lblTitulo, Alignment.MIDDLE_CENTER);
+        layoutCabecera.setComponentAlignment(lblNombreDocente, Alignment.MIDDLE_LEFT);
         layoutCabecera.setComponentAlignment(lblFechaLimite, Alignment.MIDDLE_CENTER);
         layoutCabecera.setComponentAlignment(btnPublicar, Alignment.MIDDLE_RIGHT);
         
@@ -98,4 +109,30 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         setStyleName("fondoaplicacion");
     }
     
+    private String getNombreDocente() {
+        cadenaSql = "SELECT "
+                + "CONCAT_WS(' ',a.nombre1, a.nombre2, a.apellido1, a.apellido2) AS nombre_docente "
+            + "FROM datos_personales a "
+            + "INNER JOIN docentes b ON b.codigo_dato_personal = a.codigo_dato_personal AND b.codigo_docente = " + UI.getCurrent().getSession().getAttribute(VariablesSesion.CODIGO_DOCENTE)
+            ;
+        GestionDB objConnect = null;
+        try {
+            objConnect = new GestionDB();
+            ResultSet rs = objConnect.consultar(cadenaSql);
+            if ( rs.next() ) {
+                return rs.getString(1);
+            }
+        } catch (NamingException | SQLException ex) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
+        } finally {
+            try {
+                if (objConnect != null) {
+                    objConnect.desconectar();
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Cerrando Conexión - " + SeveralProcesses.getSessionUser(), ex);
+            }
+        }
+        return null;
+    }
 }
