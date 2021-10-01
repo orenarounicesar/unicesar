@@ -1,9 +1,12 @@
 package com.unicesar;
 
+import com.unicesar.utils.Settings;
+import com.unicesar.utils.Views;
 import javax.servlet.annotation.WebServlet;
 
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.VaadinServletConfiguration;
+import com.vaadin.navigator.Navigator;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.ui.Button;
@@ -22,24 +25,22 @@ import com.vaadin.ui.VerticalLayout;
 @Theme("mytheme")
 public class MyUI extends UI {
 
+    private Navigator navigator;
+    
+    
+    public Navigator getNavigatorUI() {
+        return navigator;
+    }            
+    
     @Override
     protected void init(VaadinRequest vaadinRequest) {
-        final VerticalLayout layout = new VerticalLayout();
+        Settings settings = new Settings();
         
-        final TextField name = new TextField();
-        name.setCaption("Type your name here:");
-
-        Button button = new Button("Click Me");
-        button.addClickListener( e -> {
-            layout.addComponent(new Label("Thanks " + name.getValue() 
-                    + ", it works!"));
-        });
+        navigator = new Navigator(this, this);
         
-        layout.addComponents(name, button);
-        layout.setMargin(true);
-        layout.setSpacing(true);
+        Views.setViewsUI(navigator);
         
-        setContent(layout);
+        navigator.navigateTo(Views.REGISTRARNOTAS);
     }
 
     @WebServlet(urlPatterns = "/*", name = "MyUIServlet", asyncSupported = true)
