@@ -13328,6 +13328,14 @@ div.v-layout.v-horizontal.v-widget {
 	height: 17px;
 }
 
+.mytheme .v-table-tablaasignaturas .v-table-cell-content {
+	font-size: 18px;
+	font-weight: bold;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	height: 31px;
+}
+
 .mytheme .v-filterselect-delgado .v-filterselect-input, .mytheme .v-filterselect-delgado .v-filterselect-button {
 	font-size: 13px;
 	height: 25px;

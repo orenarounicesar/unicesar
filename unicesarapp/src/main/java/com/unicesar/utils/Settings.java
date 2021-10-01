@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Settings {
+    public static int MINUTOSSESION;
     public static String RUTADIRECTORIOTEMPORAL;
     public static boolean VERIFICARCIERRECONEXION;
     public static int SEGUNDOSCERRARCONEXION;
@@ -17,6 +18,7 @@ public class Settings {
             FileInputStream fis = new FileInputStream(System.getProperty("jboss.server.config.dir") + "/unicesarapp/configuracion.properties");
             Properties props = new Properties();
             props.load(fis);
+            MINUTOSSESION = Integer.valueOf(props.getProperty("MINUTOSSESION"));
             VERIFICARCIERRECONEXION = Boolean.valueOf(props.getProperty("VERIFICARCIERRECONEXION"));
             SEGUNDOSCERRARCONEXION = Integer.valueOf(props.getProperty("SEGUNDOSCERRARCONEXION"));
             fis.close();

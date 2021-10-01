@@ -2026,4 +2026,8 @@ public class SeveralProcesses {
         
         return retorno;
     }
+    
+    public static Object getCodigoDocenteEnSesion() {
+        return UI.getCurrent().getSession().getAttribute(VariablesSesion.CODIGO_DOCENTE);
+    }
 }
