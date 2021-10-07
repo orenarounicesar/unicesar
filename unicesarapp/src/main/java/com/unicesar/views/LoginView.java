@@ -47,7 +47,7 @@ public class LoginView extends VerticalLayout implements View {
         panelLogin = new Panel();
         panelLogin.setCaption("Acceso a Unicesar App");
         panelLogin.setSizeUndefined();
-        panelLogin.setStyleName("panelverde", true);
+        panelLogin.setStyleName("panelverdeancho", true);
         panelLogin.setStyleName("bordeverde", true);
 
         layoutLogin = new FormLayout();
@@ -57,7 +57,6 @@ public class LoginView extends VerticalLayout implements View {
         layoutLogin.setMargin(true);
         layoutLogin.setSpacing(true);
 
-        // textFieldUsuario
         txtLogin = new TextField();
         txtLogin.setRequired(true);
         txtLogin.setCaption("Usuario:");

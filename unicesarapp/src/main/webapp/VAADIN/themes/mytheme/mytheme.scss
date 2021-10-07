@@ -358,14 +358,14 @@
     }
     
     .v-panel-caption-panelnormal {
-        text-align: center;
+        /*text-align: center;*/
         /*background: #3598dc;*/
         /*background: #F7B64D;*/
-        @include linear-gradient(rgba(246,173,53,0.3), rgba(246,173,53,1)); /*background con degradado*/
+/*        @include linear-gradient(rgba(246,173,53,0.3), rgba(246,173,53,1)); background con degradado
         color: #000;
-        font-size: 14px;
+        font-size: 14px;*/
         line-height: 30px;
-        padding-top: 4px;
+        /*padding-top: 4px;*/
         /*font-weight: bold;*/
     }
     
@@ -397,6 +397,16 @@
         line-height: 22px;
         padding-top: 4px;
         /*font-weight: bold;*/
+    }
+    
+    .v-panel-caption-panelverdeancho {
+        text-align: center;
+        background: #19675f;
+        color: #fff;
+        font-size: 14px;
+        line-height: 30px;
+        padding-top: 4px;
+        font-weight: bold;
     }
     
     .v-panel-caption-panelturnopantallarojo {

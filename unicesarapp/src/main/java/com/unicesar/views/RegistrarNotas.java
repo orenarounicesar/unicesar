@@ -45,8 +45,6 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
     private GridLayout layoutCabecera;
     private TableWithFilterSplit tblAsignaturas;
     private TableWithFilterSplit tblEstudiantes;
-    private Panel panelTblAsignaturas;
-    private Panel panelTblEstudiantes;
     private HorizontalSplitPanel layoutTablas;
     
     private String cadenaSql;
@@ -77,29 +75,29 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         layoutCabecera.setComponentAlignment(lblCorte, Alignment.MIDDLE_CENTER);
         layoutCabecera.setComponentAlignment(btnPublicar, Alignment.MIDDLE_RIGHT);
         
-        tblAsignaturas = new TableWithFilterSplit("asignatura", null, true);
+        tblAsignaturas = new TableWithFilterSplit("asignatura", "Listado de Asignaturas", true);
         tblAsignaturas.addContainerProperty("codigo", Object.class, null, "Codigo", null, Table.Align.CENTER);
         tblAsignaturas.addContainerProperty("asignatura", Object.class, null, "Asignatura", null, Table.Align.CENTER);
         tblAsignaturas.setSizeFull();
         tblAsignaturas.setStyleName("tablaasignaturas");
-        panelTblAsignaturas = new Panel("Listado de Asignaturas", tblAsignaturas);
-        panelTblAsignaturas.setSizeFull();
-        panelTblAsignaturas.setStyleName("panelverde");
-        panelTblAsignaturas.addStyleName("bordeverde");
+        tblAsignaturas.layoutContent.setSizeFull();
+        tblAsignaturas.panel.setSizeFull();
+        tblAsignaturas.panel.setStyleName("panelverde");
+        tblAsignaturas.panel.addStyleName("bordeverde");
         
-        tblEstudiantes = new TableWithFilterSplit("estudiante", null, true);
+        tblEstudiantes = new TableWithFilterSplit("estudiante", "Listado de Estudiantes", true);
         tblEstudiantes.addContainerProperty("codigo", Object.class, null, "Codigo", null, Table.Align.CENTER);
         tblEstudiantes.addContainerProperty("estudiante", Object.class, null, "Estudiante", null, Table.Align.CENTER);
         tblEstudiantes.addContainerProperty("id", Object.class, null, "Identificación", null, Table.Align.CENTER);
         tblEstudiantes.addContainerProperty("nota", NumberFieldCustom.class, null, "Nota", null, Table.Align.CENTER);
         tblEstudiantes.setSizeFull();
         tblEstudiantes.setStyleName("tablafilasdelgadascomponente");
-        panelTblEstudiantes = new Panel("Listado de Estudiantes", tblEstudiantes);
-        panelTblEstudiantes.setSizeFull();
-        panelTblEstudiantes.setStyleName("panelverde");
-        panelTblEstudiantes.addStyleName("bordeverde");
+        tblEstudiantes.layoutContent.setSizeFull();
+        tblEstudiantes.panel.setSizeFull();
+        tblEstudiantes.panel.setStyleName("panelverde");
+        tblEstudiantes.panel.addStyleName("bordeverde");
         
-        layoutTablas = new HorizontalSplitPanel(panelTblAsignaturas, panelTblEstudiantes);
+        layoutTablas = new HorizontalSplitPanel(tblAsignaturas.panel, tblEstudiantes.panel);
         layoutTablas.setSizeFull();
         layoutTablas.setSplitPosition(500, Sizeable.Unit.PIXELS);
         
@@ -224,6 +222,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
             while ( rs.next() ) {
                 NumberFieldCustom txtNota = new NumberFieldCustom(null, true, false, 0.00, 5.00, rs.getString("nota"), "100%", false, true, null);
                 txtNota.setStyleName(ValoTheme.TEXTAREA_BORDERLESS);
+                txtNota.addStyleName("centrartexto");
                 txtNota.addValueChangeListener(new Property.ValueChangeListener() {
                     private final int codigoEstudianteAsignatura = rs.getInt("codigo_estudiante_asignatura");
                     @Override

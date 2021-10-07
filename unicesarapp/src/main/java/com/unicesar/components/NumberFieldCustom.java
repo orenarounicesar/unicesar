@@ -42,6 +42,7 @@ public class NumberFieldCustom extends NumberField {
         this.setEnabled(habilitado);
         if (styleName != null)
             this.setStyleName(styleName);
+        
     }
     
 }

@@ -13539,14 +13539,7 @@ div.v-layout.v-horizontal.v-widget {
 }
 
 .mytheme .v-panel-caption-panelnormal {
-	text-align: center;
-	background-color: rgba(246, 173, 53, 0.3);
-	background-image: -webkit-linear-gradient(rgba(246, 173, 53, 0.3), #f6ad35);
-	background-image: linear-gradient(rgba(246, 173, 53, 0.3), #f6ad35);
-	color: #000;
-	font-size: 14px;
 	line-height: 30px;
-	padding-top: 4px;
 }
 
 .mytheme .v-panel {
@@ -13570,6 +13563,16 @@ div.v-layout.v-horizontal.v-widget {
 	font-size: 14px;
 	line-height: 22px;
 	padding-top: 4px;
+}
+
+.mytheme .v-panel-caption-panelverdeancho {
+	text-align: center;
+	background: #19675f;
+	color: #fff;
+	font-size: 14px;
+	line-height: 30px;
+	padding-top: 4px;
+	font-weight: bold;
 }
 
 .mytheme .v-panel-caption-panelturnopantallarojo {
