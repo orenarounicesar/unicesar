@@ -6,11 +6,14 @@
 package com.unicesar.views;
 
 import com.unicesar.businesslogic.GestionDB;
+import com.unicesar.businesslogic.GestionDBException;
+import com.unicesar.components.LabelClick;
 import com.unicesar.components.NumberFieldCustom;
 import com.unicesar.components.TableWithFilterSplit;
 import com.unicesar.utils.GestionarNota;
 import com.unicesar.utils.SeveralProcesses;
 import com.vaadin.data.Property;
+import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewChangeListener;
 import com.vaadin.server.FontAwesome;
@@ -22,7 +25,7 @@ import com.vaadin.ui.Button;
 import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Label;
-import com.vaadin.ui.Panel;
+import com.vaadin.ui.Notification;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.VerticalSplitPanel;
 import com.vaadin.ui.themes.ValoTheme;
@@ -41,6 +44,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
     private Label lblTitulo;
     private Label lblNombreDocente;
     private Label lblCorte;
+    private LabelClick lblSalir;
     private Button btnPublicar;
     private GridLayout layoutCabecera;
     private TableWithFilterSplit tblAsignaturas;
@@ -56,14 +60,24 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         lblTitulo.setWidthUndefined();
         lblTitulo.setStyleName("titulo");
         lblTitulo.addStyleName("textoEnormeRojo");
+        lblSalir = new LabelClick("Cerrar Sesión" + VaadinIcons.EXIT_O.getHtml(), false);
+        lblSalir.setWidthUndefined();
+        lblSalir.layoutLabel.addLayoutClickListener(e -> {
+            SeveralProcesses.cerrarSesion();
+        });
         lblNombreDocente = new Label("Docente: <strong>" + getNombreDocente() + "</strong>", ContentMode.HTML);
         lblNombreDocente.setWidthUndefined();
         setValorLblCorte();
         btnPublicar = new Button("PUBLICAR", FontAwesome.EYE);
         btnPublicar.setStyleName("verde");
+        btnPublicar.setEnabled(false);
+        btnPublicar.addClickListener(e -> {
+            publicarNotasAsignatura();
+        });
         
         layoutCabecera = new GridLayout(3, 2);
-        layoutCabecera.addComponent(lblTitulo, 0, 0, 2, 0);
+        layoutCabecera.addComponent(lblTitulo, 1, 0);
+        layoutCabecera.addComponent(lblSalir.layoutLabel, 2, 0);
         layoutCabecera.addComponent(lblNombreDocente, 0, 1);
         layoutCabecera.addComponent(lblCorte, 1, 1);
         layoutCabecera.addComponent(btnPublicar, 2, 1);
@@ -71,9 +85,10 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         layoutCabecera.setMargin(new MarginInfo(false, true, false, true));
         layoutCabecera.setSpacing(true);
         layoutCabecera.setComponentAlignment(lblTitulo, Alignment.MIDDLE_CENTER);
+        layoutCabecera.setComponentAlignment(lblSalir.layoutLabel, Alignment.MIDDLE_RIGHT);
         layoutCabecera.setComponentAlignment(lblNombreDocente, Alignment.MIDDLE_LEFT);
         layoutCabecera.setComponentAlignment(lblCorte, Alignment.MIDDLE_CENTER);
-        layoutCabecera.setComponentAlignment(btnPublicar, Alignment.MIDDLE_RIGHT);
+        layoutCabecera.setComponentAlignment(btnPublicar, Alignment.TOP_RIGHT);
         
         tblAsignaturas = new TableWithFilterSplit("asignatura", "Listado de Asignaturas", true);
         tblAsignaturas.addContainerProperty("codigo", Object.class, null, "Codigo", null, Table.Align.CENTER);
@@ -105,10 +120,12 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         setSizeFull();
         setSplitPosition(85, Sizeable.Unit.PIXELS);
         setStyleName("fondoaplicacion");
+        setLocked(true);
         
         cargarTblAsignaturas();
         tblAsignaturas.addItemClickListener(e -> {
             cargarTblEstudiantes(e.getItem().getItemProperty("codigo").getValue());
+            btnPublicar.setEnabled(!isNotasPublicadas());
         });
     }
     
@@ -208,7 +225,8 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
                 + "b.codigo_universitario, "
                 + "CONCAT_WS(' ',a.apellido1,a.apellido2,a.nombre1,a.nombre2) AS nombre_estudiante, "
                 + "CONCAT_WS(' - ',a.tipo_id, id) AS identificacion, "
-                + "d.nota "
+                + "d.nota, "
+                + "d.publicada "
             + "FROM datos_personales a "
             + "INNER JOIN estudiantes b ON b.codigo_dato_personal = a.codigo_dato_personal "
             + "INNER JOIN estudiantes_asignaturas c ON c.codigo_estudiante = b.codigo_estudiante AND c.codigo_asignatura = " + codigoAsignatura + " "
@@ -223,6 +241,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
                 NumberFieldCustom txtNota = new NumberFieldCustom(null, true, false, 0.00, 5.00, rs.getString("nota"), "100%", false, true, null);
                 txtNota.setStyleName(ValoTheme.TEXTAREA_BORDERLESS);
                 txtNota.addStyleName("centrartexto");
+                txtNota.setEnabled(!rs.getBoolean("publicada"));
                 txtNota.addValueChangeListener(new Property.ValueChangeListener() {
                     private final int codigoEstudianteAsignatura = rs.getInt("codigo_estudiante_asignatura");
                     @Override
@@ -272,4 +291,117 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         }
     }
     
+    private void publicarNotasAsignatura() {
+        if ( isNotasAlmacenadasAsignatura() ) {
+            publicarNotas();
+        } else {
+            Notification.show("Debe diligenciar las notas de TODOS los estudiantes de la ASIGNATURA\npara poder publicar", Notification.Type.ERROR_MESSAGE);
+        }
+    }
+    
+    private boolean isNotasAlmacenadasAsignatura() {
+        boolean retorno = true;
+        for ( Object itemId : tblEstudiantes.getItemIds() ) {
+            retorno = isNotaAlmacenada(Integer.valueOf(itemId.toString()), codigoCorte);
+            if ( !retorno )
+                break;
+        }
+        return retorno;
+    }
+    
+    private boolean isNotaAlmacenada(int codigoEstudianteAsignatura, int codigoCorte) {
+        cadenaSql = "SELECT a.codigo_nota "
+                + "FROM notas a "
+                + "WHERE a.codigo_estudiante_asignatura = " + codigoEstudianteAsignatura + " AND a.codigo_corte = " + codigoCorte;
+        GestionDB objConnect = null;
+        try {
+            objConnect = new GestionDB();
+            ResultSet rs = objConnect.consultar(cadenaSql);
+            if ( rs.next() )
+                return true;
+        } catch (NamingException | SQLException ex) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
+        } finally {
+            try {
+                if (objConnect != null) {
+                    objConnect.desconectar();
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Cerrando Conexión - " + SeveralProcesses.getSessionUser(), ex);
+            }
+        }
+        return false;
+    }
+    
+    private boolean isNotasPublicadas() {
+        boolean retorno = true;
+        for ( Object itemId : tblEstudiantes.getItemIds() ) {
+            retorno = isNotaPublicada(Integer.valueOf(itemId.toString()), codigoCorte);
+            if ( !retorno )
+                break;
+        }
+        return retorno;
+    }
+    
+    private boolean isNotaPublicada(int codigoEstudianteAsignatura, int codigoCorte) {
+        cadenaSql = "SELECT a.publicada "
+                + "FROM notas a "
+                + "WHERE a.codigo_estudiante_asignatura = " + codigoEstudianteAsignatura + " AND a.codigo_corte = " + codigoCorte;
+        GestionDB objConnect = null;
+        try {
+            objConnect = new GestionDB();
+            ResultSet rs = objConnect.consultar(cadenaSql);
+            if ( rs.next() )
+                return rs.getBoolean(1);
+        } catch (NamingException | SQLException ex) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
+        } finally {
+            try {
+                if (objConnect != null) {
+                    objConnect.desconectar();
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Cerrando Conexión - " + SeveralProcesses.getSessionUser(), ex);
+            }
+        }
+        return false;
+    }
+    
+    private void publicarNotas() {
+        GestionDB objConnect = null;
+        try {
+            objConnect = new GestionDB();
+            objConnect.begin();
+            for ( Object itemId : tblEstudiantes.getItemIds() ) {
+                publicarNota(objConnect, Integer.valueOf(itemId.toString()), codigoCorte);
+            }
+            objConnect.commit();
+            Notification.show("Publicación Exitosa", Notification.Type.ERROR_MESSAGE);
+            btnPublicar.setEnabled(false);
+        } catch (NamingException | SQLException | GestionDBException ex) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
+            try {
+                if (objConnect != null) {
+                    objConnect.rollback();
+                }
+            } catch (SQLException ex1) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Rollback - " + SeveralProcesses.getSessionUser(), ex1);
+            }
+        } finally {
+            try {
+                if (objConnect != null) {
+                    objConnect.desconectar();
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Cerrando Conexión - " + SeveralProcesses.getSessionUser(), ex);
+            }
+        }
+    }
+    
+    private void publicarNota(GestionDB objConnect, int codigoEstudianteAsignatura, int codigoCorte) throws SQLException, GestionDBException {
+        cadenaSql = "UPDATE notas a "
+                + "SET a.publicada = 1 "
+                + "WHERE a.codigo_estudiante_asignatura = " + codigoEstudianteAsignatura + " AND a.codigo_corte = " + codigoCorte;
+        SeveralProcesses.confirmarSentencia(objConnect.insertarActualizarBorrar(cadenaSql, false));
+    }
 }

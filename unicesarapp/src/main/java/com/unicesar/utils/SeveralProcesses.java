@@ -2030,4 +2030,15 @@ public class SeveralProcesses {
     public static Object getCodigoDocenteEnSesion() {
         return UI.getCurrent().getSession().getAttribute(VariablesSesion.CODIGO_DOCENTE);
     }
+    
+    public static void cerrarSesion() {
+        UI.getCurrent().getSession().setAttribute(VariablesSesion.LOGIN, null);
+        UI.getCurrent().getSession().setAttribute(VariablesSesion.NOMBRE_USUARIO, null);
+        UI.getCurrent().getSession().setAttribute(VariablesSesion.CODIGO_USUARIO, null);
+        UI.getCurrent().getSession().setAttribute(VariablesSesion.CODIGO_DOCENTE, null);
+        UI.getCurrent().getSession().setAttribute(VariablesSesion.CODIGO_ESTUDAINTE, null);
+        UI.getCurrent().getSession().close();
+        UI.getCurrent().close();
+        UI.getCurrent().getNavigator().navigateTo(Views.REGISTRARNOTAS);
+    }
 }

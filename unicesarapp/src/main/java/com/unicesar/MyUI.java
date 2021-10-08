@@ -14,8 +14,6 @@ import com.vaadin.server.VaadinService;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.server.VaadinSession;
 import com.vaadin.ui.UI;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 
@@ -69,7 +67,7 @@ public class MyUI extends UI {
             CustomizedSystemMessages messages = new CustomizedSystemMessages();
             messages.setSessionExpiredCaption("Sesión Expirada");
             messages.setSessionExpiredMessage("Haga Click para Inicio Sesión");
-            messages.setSessionExpiredNotificationEnabled(true);
+            messages.setSessionExpiredNotificationEnabled(false);
 
             getService().setSystemMessagesProvider(e -> {
                 return messages;
