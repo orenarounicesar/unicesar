@@ -10,8 +10,11 @@ import com.unicesar.businesslogic.GestionDBException;
 import com.unicesar.components.LabelClick;
 import com.unicesar.components.NumberFieldCustom;
 import com.unicesar.components.TableWithFilterSplit;
+import com.unicesar.utils.EmailSender;
 import com.unicesar.utils.GestionarNota;
+import com.unicesar.utils.Settings;
 import com.unicesar.utils.SeveralProcesses;
+import com.unicesar.utils.StandarEmailSender;
 import com.vaadin.data.Property;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.navigator.View;
@@ -52,6 +55,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
     private HorizontalSplitPanel layoutTablas;
     
     private String cadenaSql;
+    private String nombreAsignaturaSeleccionada, nombreCorte;
     private final int codigoCorte = 1;
     
     @Override
@@ -65,7 +69,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         lblSalir.layoutLabel.addLayoutClickListener(e -> {
             SeveralProcesses.cerrarSesion();
         });
-        lblNombreDocente = new Label("Docente: <strong>" + getNombreDocente() + "</strong>", ContentMode.HTML);
+        lblNombreDocente = new Label("Docente: <strong>" + getNombreDocente(SeveralProcesses.getCodigoDocenteEnSesion()) + "</strong>", ContentMode.HTML);
         lblNombreDocente.setWidthUndefined();
         setValorLblCorte();
         btnPublicar = new Button("PUBLICAR", FontAwesome.EYE);
@@ -124,16 +128,17 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         
         cargarTblAsignaturas();
         tblAsignaturas.addItemClickListener(e -> {
-            cargarTblEstudiantes(e.getItem().getItemProperty("codigo").getValue());
+            cargarTblEstudiantes( e.getItem().getItemProperty("codigo").getValue() );
             btnPublicar.setEnabled(!isNotasPublicadas());
+            nombreAsignaturaSeleccionada = e.getItem().getItemProperty("asignatura").getValue().toString();
         });
     }
     
-    private String getNombreDocente() {
+    private String getNombreDocente(Object codigoDocente) {
         cadenaSql = "SELECT "
                 + "CONCAT_WS(' ',a.nombre1, a.nombre2, a.apellido1, a.apellido2) AS nombre_docente "
             + "FROM datos_personales a "
-            + "INNER JOIN docentes b ON b.codigo_dato_personal = a.codigo_dato_personal AND b.codigo_docente = " + SeveralProcesses.getCodigoDocenteEnSesion()
+            + "INNER JOIN docentes b ON b.codigo_dato_personal = a.codigo_dato_personal AND b.codigo_docente = " + codigoDocente
             ;
         GestionDB objConnect = null;
         try {
@@ -164,7 +169,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
                 + "a.nombre_corte, "
                 + "b.fecha "
             + "FROM cortes a "
-            + "INNER JOIN cortes_fechas b ON b.codigo_corte = a.codigo_corte "
+            + "INNER JOIN cortes_fechas b ON b.codigo_corte = a.codigo_corte AND b.actual = 1 "
             + "WHERE a.codigo_corte = " + codigoCorte
             ;
         GestionDB objConnect = null;
@@ -173,6 +178,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
             ResultSet rs = objConnect.consultar(cadenaSql);
             if ( rs.next() ) {
                 lblCorte.setValue("<strong>" + rs.getString("nombre_corte") + "</strong> - Fecha Limite: " + "<strong>" + rs.getString("fecha") + "</strong>" );
+                nombreCorte = rs.getString("nombre_corte");
             }
         } catch (NamingException | SQLException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
@@ -343,7 +349,7 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
         return retorno;
     }
     
-    private boolean isNotaPublicada(int codigoEstudianteAsignatura, int codigoCorte) {
+    public boolean isNotaPublicada(int codigoEstudianteAsignatura, int codigoCorte) {
         cadenaSql = "SELECT a.publicada "
                 + "FROM notas a "
                 + "WHERE a.codigo_estudiante_asignatura = " + codigoEstudianteAsignatura + " AND a.codigo_corte = " + codigoCorte;
@@ -378,6 +384,22 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
             objConnect.commit();
             Notification.show("Publicación Exitosa", Notification.Type.ERROR_MESSAGE);
             btnPublicar.setEnabled(false);
+            for ( Object itemId : tblEstudiantes.getItemIds() ) {
+                new StandarEmailSender(
+                        new EmailSender(
+                            Settings.EMAILORIGEN, 
+                            Settings.EMAILPASSWORD, 
+                            getEmailEstuadiante(itemId), 
+                            "Publicación de Notas - Asignatura " + nombreAsignaturaSeleccionada,
+                            "Buenas\n\n"
+                                    + "Se informa que las notas de la asignatura " + nombreAsignaturaSeleccionada + " para el " + nombreCorte + " fueron publicadas",
+                            null, 
+                            null,
+                            null,
+                            null
+                        )
+                ).start();
+            }
         } catch (NamingException | SQLException | GestionDBException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
             try {
@@ -403,5 +425,31 @@ public class RegistrarNotas extends VerticalSplitPanel implements View {
                 + "SET a.publicada = 1 "
                 + "WHERE a.codigo_estudiante_asignatura = " + codigoEstudianteAsignatura + " AND a.codigo_corte = " + codigoCorte;
         SeveralProcesses.confirmarSentencia(objConnect.insertarActualizarBorrar(cadenaSql, false));
+    }
+
+    private String getEmailEstuadiante(Object itemId) {
+        cadenaSql = "SELECT a.email "
+                + "FROM datos_personales a "
+                + "INNER JOIN estudiantes b ON b.codigo_dato_personal = a.codigo_dato_personal "
+                + "INNER JOIN estudiantes_asignaturas c ON c.codigo_estudiante = b.codigo_estudiante AND c.codigo_estudiante_asignatura = " + itemId
+                ;
+        GestionDB objConnect = null;
+        try {
+            objConnect = new GestionDB();
+            ResultSet rs = objConnect.consultar(cadenaSql);
+            if ( rs.next() )
+                return rs.getString(1);
+        } catch (NamingException | SQLException ex) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, cadenaSql + " - " + SeveralProcesses.getSessionUser(), ex);
+        } finally {
+            try {
+                if (objConnect != null) {
+                    objConnect.desconectar();
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Cerrando Conexión - " + SeveralProcesses.getSessionUser(), ex);
+            }
+        }
+        return null;
     }
 }

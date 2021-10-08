@@ -9,10 +9,13 @@ import com.vaadin.data.util.sqlcontainer.connection.JDBCConnectionPool;
 import com.vaadin.ui.UI;
 import java.io.ByteArrayOutputStream;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
@@ -48,7 +51,13 @@ public class GestionDB {
     }
     
     public void conectar() throws NamingException, SQLException {
-        this.conexion = InitialContext.<DataSource>doLookup(vJndi).getConnection();
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            this.conexion = DriverManager.getConnection("jdbc:mysql://localhost:3306/unicesarappdb?useSSL=false", "orenaro", "orenaro");
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(GestionDB.class.getName()).log(Level.SEVERE, null, ex);
+        }
+//        this.conexion = InitialContext.<DataSource>doLookup(vJndi).getConnection();
         this.instancia = (Statement) this.conexion.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE,
             ResultSet.CONCUR_READ_ONLY

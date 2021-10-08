@@ -30,9 +30,9 @@ public class TableWithFilterSplit extends Table {
         txtFiltro = new TextField(caption + " (Digite en la 1ra Fila para Filtrar)");
         txtFiltro.setDescription("Digite para filtrar");
         txtFiltro.setReadOnly(!habilitado);
-        txtFiltro.setWidth("100%");
         txtFiltro.setStyleName(ValoTheme.TEXTFIELD_TINY);
         txtFiltro.setStyleName("filtro", true);
+        txtFiltro.setSizeFull();
         txtFiltro.addTextChangeListener((FieldEvents.TextChangeEvent event) -> {
             filterable = (Filterable)table.getContainerDataSource();
             
@@ -46,7 +46,7 @@ public class TableWithFilterSplit extends Table {
         });
         
         layoutContent = new VerticalSplitPanel(txtFiltro, this);
-        layoutContent.setSplitPosition(25, Sizeable.Unit.PIXELS);
+        layoutContent.setSplitPosition(30, Sizeable.Unit.PIXELS);
         layoutContent.setLocked(true);
         layoutContent.setWidth("100%");
 //        layoutContent.setMargin(true);
